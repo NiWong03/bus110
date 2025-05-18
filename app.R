@@ -3,15 +3,17 @@ library(ggplot2)
 library(dplyr)
 library(stargazer)
 library(DT)
+library(tidyr)
 
 ui <- navbarPage(
   "NBA Player Stats Analysis",
+  tags$link(rel = "stylesheet", type = "text/css", href = "styles.css"),
+
   tabPanel("Introduction",
     sidebarLayout(
       position = "right",
       sidebarPanel(
-        img(src = "Giannis.jpeg", height = "100%", width = "100%", style = "object-fit: contain;")
-      ),
+        img(src = "Giannis.jpeg", height = "100%", width = "100%", style = "object-fit: contain;")      ),
       mainPanel(
         h1("Purpose:"),
         h5("This application explores and visualizes NBA player performance based on various statistical variables. Using advanced analytics and historical data from the 2023–2024 season, we aim to assess how different factors influence scoring outcomes. The analysis helps estimate future performance under a range of parameters using pre-existing player statistics."),
@@ -25,7 +27,29 @@ ui <- navbarPage(
         br(),
         h4("Dataset:"),
         DTOutput("dataTable"), #displays data table
-        br()
+        br(),
+        plotOutput("stackedHistogram"), #new stacked histogram
+        br(),
+        h1("Description of Variables:"),
+        tags$ul(
+            tags$li(tags$b("MP"), "(Minutes Played per game) – Measures how long a player is on the court, representing overall contribution time"),
+            br(),
+            tags$li(tags$b("PTS"), " (Points per game) – Reflects scoring ability"),
+            br(),
+            tags$li(tags$b("TRB"), " (Total Rebounds per game) – Captures rebounding performance, both offensive and defensive"),
+            br(),
+            tags$li(tags$b("AST"), " (Assists per game) – Measures playmaking and team involvement"),
+            br(),
+            tags$li(tags$b("FG%"), " (Field Goal Percentage) – Indicates shooting efficiency"),
+            br(),
+            tags$li(tags$b("TOV"), "(Turnovers per game) – Reflects ball security and decision-making"),
+            br(),
+            tags$li(tags$b("X3PA"), " (Three-Point Attempts per game) – Indicates the number of three-point shots a player attempts per game"),
+            br(),
+            tags$li(tags$b("X3P."), " (Three-Point Percentage) – Shows the success rate of a player's three-point shots"),
+            br(),
+            tags$li(tags$b("FGA"), " (Field Goal Attempts per game) – Represents the number of shots a player takes from the field goal line")
+        )
       )
     )
   ),
@@ -41,10 +65,12 @@ ui <- navbarPage(
                                 "Three-Point Attempts" = "X3PA",
                                 "Three-Point %" = "X3P.",
                                 "Assists" = "AST",
-                                "Rebounds" = "TRB"))
+                                "Rebounds" = "TRB",
+                                "Field Goals" = "FG"))
       ),
       mainPanel(
         plotOutput("scatterPlot"),
+        plotOutput("histogramPlot"),
         verbatimTextOutput("regressionOutput"),
         verbatimTextOutput("columnNames")
       )
@@ -93,13 +119,27 @@ server <- function(input, output) {
       "X3PA" = "Three-Point Attempts per Game",
       "X3P." = "Three-Point %",
       "AST" = "Assists per Game",
-      "TRB" = "Total Rebounds per Game"
+      "TRB" = "Total Rebounds per Game",
+      "FG" = "Field Goals per Game"
     )
     
     ggplot(df, aes_string(x = input$xvar, y = "PTS")) +
       geom_point(color = "steelblue") +
       labs(title = paste("Points vs", var_labels[input$xvar]),
            x = var_labels[input$xvar], y = "Points per Game") +
+      theme_minimal()
+  })
+
+  output$histogramPlot <- renderPlot({
+    df <- data()
+    var <- input$xvar
+    ggplot(df, aes_string(x = var)) +
+      geom_histogram(fill = "steelblue", color = "black", bins = 20) +
+      labs(
+        title = paste("Histogram of", var),
+        x = var,
+        y = "Frequency"
+      ) +
       theme_minimal()
   })
 
@@ -131,6 +171,44 @@ server <- function(input, output) {
                 scrollX = TRUE,
                 scrollY = "400px"
               ))
+  })
+
+  output$stackedHistogram <- renderPlot({
+    df <- data()
+    
+    # Create a long format dataset for all variables
+    plot_data <- df %>%
+      select(MP, FGA, X3PA, `X3P.`, AST, TRB, FG) %>%
+      pivot_longer(
+        cols = everything(),
+        names_to = "Statistic",
+        values_to = "Value"
+      )
+    
+    var_labels <- c(
+      "MP" = "Minutes Played per Game",
+      "FGA" = "Field Goal Attempts per Game",
+      "X3PA" = "Three-Point Attempts per Game",
+      "X3P." = "Three-Point %",
+      "AST" = "Assists per Game",
+      "TRB" = "Total Rebounds per Game",
+      "FG" = "Field Goals per Game"
+    )
+    
+    ggplot(plot_data, aes(x = Value, fill = Statistic)) +
+      geom_histogram(position = "identity", color = "black", bins = 10, alpha = 0.5) +
+      labs(
+        title = "Distribution of All Statistical Categories",
+        x = "Value",
+        y = "Number of Players",
+        fill = "Statistical Category"
+      ) +
+      scale_fill_discrete(labels = var_labels) +
+      theme_minimal() +
+      theme(
+        legend.position = "right",
+        plot.title = element_text(hjust = 0.5)
+      )
   })
 }
 

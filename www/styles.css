@@ -1,0 +1,23 @@
+@keyframes float {
+  0%   { transform: translateY(0px); }
+  50%  { transform: translateY(-20px); }
+  100% { transform: translateY(0px); }
+}
+
+.floating-img {
+  animation: float 2s ease-in-out infinite;
+}
+
+.parallax {
+    /* The image used */
+    background-image: url('Giannis.jpeg');
+  
+    /* Set a specific height */
+    min-height: 300px; 
+  
+    /* Create the parallax scrolling effect */
+    background-attachment: fixed;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+  }
