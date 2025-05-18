@@ -22,6 +22,7 @@ jobs:
           install.packages('rsconnect')
           install.packages('ggplot2')
           install.packages('dplyr')
+          install.packages('DT')
         shell: Rscript {0}
 
       - id: deploy
