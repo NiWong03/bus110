@@ -23,7 +23,7 @@ jobs:
          uses: qwert666/shinyapps-actions@main
          env:
            SHINY_USERNAME: 'niwong03' # put your own username here!
-           SHINY_TOKEN: ${{ secrets.TOKEN }}
-           SHINY_SECRET: ${{ secrets.SECRET }}
+           SHINY_TOKEN: ${{ secrets.TOKEN_SHINY_APPS_IO }}
+           SHINY_SECRET: ${{ secrets.SECRET_SHINY_APPS_IO }}
            APP_NAME: 'NBAStats' # this will show in the app's url
            APP_DIR: ''
