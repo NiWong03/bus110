@@ -33,7 +33,7 @@ jobs:
             token=Sys.getenv("SHINY_TOKEN"),
             secret=Sys.getenv("SHINY_SECRET")
           )
-          rsconnect::deployApp(appDir = ".", appName = "NBAStats")
+          rsconnect::deployApp(appDir = ".", appName = "NBAStats", forceUpdate = TRUE)
         shell: Rscript {0}
         env:
           SHINY_TOKEN: ${{ secrets.TOKEN_SHINY_APPS_IO }}
