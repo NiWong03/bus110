@@ -7,7 +7,20 @@ library(tidyr)
 
 ui <- navbarPage(
   "NBA Player Stats Analysis",
-  tags$link(rel = "stylesheet", type = "text/css", href = "styles.css"),
+  tags$head(
+    tags$link(rel = "stylesheet", type = "text/css", href = "styles.css")
+  ),
+  tags$div(
+    style = "position: absolute; right: 20px; top: 10px; z-index: 1000;",
+    tags$a(
+      href = "https://github.com/niwong03/bus110",
+      target = "_blank",
+      tags$img(
+        src = "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png",
+        style = "width: 30px; height: 30px;"
+      )
+    )
+  ),
 
   tabPanel("Introduction",
     sidebarLayout(
@@ -40,15 +53,15 @@ ui <- navbarPage(
             br(),
             tags$li(tags$b("AST"), " (Assists per game) – Measures playmaking and team involvement"),
             br(),
-            tags$li(tags$b("FG%"), " (Field Goal Percentage) – Indicates shooting efficiency"),
+            tags$li(tags$b("FG%"), " (Field Goal Percentage) – Indicates shooting efficiency through average percentage of shots made per game"),
             br(),
-            tags$li(tags$b("TOV"), "(Turnovers per game) – Reflects ball security and decision-making"),
+            tags$li(tags$b("TOV"), "(Turnovers per game) – Reflects average number of times a player turns the ball over per game"),
             br(),
             tags$li(tags$b("X3PA"), " (Three-Point Attempts per game) – Indicates the number of three-point shots a player attempts per game"),
             br(),
-            tags$li(tags$b("X3P."), " (Three-Point Percentage) – Shows the success rate of a player's three-point shots"),
+            tags$li(tags$b("X3P."), " (Three-Point Percentage) – Shows the average percentage of three point attempts made per game"),
             br(),
-            tags$li(tags$b("FGA"), " (Field Goal Attempts per game) – Represents the number of shots a player takes from the field goal line")
+            tags$li(tags$b("FGA"), " (Field Goal Attempts per game) – Represents the average number of shots a player takes per game")
         )
       )
     )
