@@ -23,7 +23,7 @@ jobs:
 
       - name: 📦 Install dependencies
         run: |
-          install.packages(c("shiny", "rsconnect", "ggplot2", "dplyr", "stargazer", "DT", "tidyr"))
+          install.packages(c("shiny", "rsconnect", "ggplot2", "dplyr", "stargazer", "DT", "tidyr", "psych", "corrplot", "car", "lmtest", "sandwich", "ggpubr", "moments"))
         shell: Rscript {0}
 
       - name: 🚀 Deploy to shinyapps.io
