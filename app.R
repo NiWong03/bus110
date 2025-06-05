@@ -4,6 +4,14 @@ library(dplyr)
 library(stargazer)
 library(DT)
 library(tidyr)
+library(psych)
+library(corrplot)
+library(car)
+library(lmtest)
+library(sandwich)
+library(ggpubr)
+library(moments)
+
 
 ui <- navbarPage(
   "NBA Player Stats Analysis",
@@ -26,7 +34,10 @@ ui <- navbarPage(
     sidebarLayout(
       position = "right",
       sidebarPanel(
-        img(src = "Giannis.jpeg", height = "100%", width = "100%", style = "object-fit: contain;")      ),
+        img(src = "Giannis.jpeg", height = "100%", width = "100%", style = "object-fit: contain;"),
+        br(),
+        htmlOutput("descriptiveStats")
+      ),
       mainPanel(
         h1("Purpose:"),
         h5("This application explores and visualizes NBA player performance based on various statistical variables. Using advanced analytics and historical data from the 2023–2024 season, we aim to assess how different factors influence scoring outcomes. The analysis helps estimate future performance under a range of parameters using pre-existing player statistics."),
@@ -84,12 +95,35 @@ ui <- navbarPage(
       mainPanel(
         plotOutput("scatterPlot"),
         plotOutput("histogramPlot"),
-        verbatimTextOutput("regressionOutput"),
-        verbatimTextOutput("columnNames")
+        verbatimTextOutput("regressionOutput")
       )
     )
   ),
-  
+
+  # New Correlation Analysis Tab
+  tabPanel("Correlation Analysis",
+    mainPanel(
+      h3("Correlation Heatmap"),
+      plotOutput("correlationPlot"),
+      h3("Correlation Matrix"),
+      verbatimTextOutput("correlationMatrix")
+    )
+  ),
+
+  # New Regression Diagnostics Tab
+  tabPanel("Regression Analysis",
+    mainPanel(
+      h3("Regression Diagnostic Plots"),
+      plotOutput("diagnosticPlots"),
+      h3("Model Assumptions Tests"),
+      verbatimTextOutput("modelTests"),
+      h3("VIF Analysis"),
+      verbatimTextOutput("vifOutput"),
+      h3("Normality Tests"),
+      plotOutput("normalityPlots")
+    )
+  ),
+
   # Data Overview Tab
   tabPanel("Data Overview",
     mainPanel(
@@ -101,16 +135,23 @@ ui <- navbarPage(
   ),
   
   # About Tab
-  tabPanel("About",
+  tabPanel("Report",
     mainPanel(
         h4("By Nicholas Wong and Brian Bhola"),
         h4("Dataset:"),
         tags$a(href = "https://www.kaggle.com/datasets/vivovinco/2023-2024-nba-player-stats", 
         target = "_blank",
-            "NBA Player Data 2023-2024 Season")
-      
+            "NBA Player Data 2023-2024 Season"),
+        br(),
+        br(),
+        h4("Final Report:"),
+        tags$iframe(
+          style = "height:800px; width:100%; scrolling=yes",
+          src = "BUS 110 Final.pdf"
+        )
     )
-  )
+  ),
+
 )
 
 server <- function(input, output) {
@@ -223,6 +264,157 @@ server <- function(input, output) {
         plot.title = element_text(hjust = 0.5)
       )
   })
+
+  output$descriptiveStats <- renderUI({
+    df <- data()
+    
+    # Select numeric columns for summary statistics
+    numeric_cols <- df %>%
+      select(where(is.numeric)) %>%
+      select(MP, PTS, TRB, AST, FG, FGA, X3PA, X3P., TOV)
+    
+    # Create summary statistics using stargazer
+    stats_table <- stargazer(numeric_cols,
+                            type = "html",
+                            title = "Descriptive Statistics",
+                            digits = 2,
+                            summary = TRUE,
+                            header = FALSE,
+                            style = "all",
+                            column.sep.width = "20pt",
+                            font.size = "small")
+    
+    # Add custom CSS for better spacing
+    custom_css <- "
+      <style>
+        table {
+          border-collapse: separate;
+          border-spacing: 0 10px;
+          margin: 20px 0;
+        }
+        th, td {
+          padding: 8px 15px;
+        }
+        th {
+          background-color: #f5f5f5;
+        }
+      </style>
+    "
+    
+    HTML(paste0(custom_css, stats_table))
+  })
+
+  # New Correlation Analysis Outputs
+  output$correlationPlot <- renderPlot({
+    df <- data()
+    correlation_vars <- df %>%
+      select(MP, FGA, `FG.`, X3PA, `X3P.`, AST, TRB, PTS)
+    
+    cor_matrix <- cor(correlation_vars, use = "complete.obs")
+    
+    corrplot(cor_matrix, 
+             method = "color",
+             type = "upper",
+             addCoef.col = "black",
+             tl.col = "black",
+             tl.srt = 45,
+             diag = FALSE,
+             title = "Correlation Heatmap of NBA Statistics",
+             mar = c(0,0,2,0))
+  })
+
+  output$correlationMatrix <- renderPrint({
+    df <- data()
+    correlation_vars <- df %>%
+      select(MP, FGA, `FG.`, X3PA, `X3P.`, AST, TRB, PTS)
+    
+    cor_matrix <- cor(correlation_vars, use = "complete.obs")
+    print(cor_matrix)
+  })
+
+  # New Regression Diagnostics Outputs
+  output$diagnosticPlots <- renderPlot({
+    df <- data()
+    model <- lm(PTS ~ MP + FGA + `FG.` + X3PA + `X3P.` + AST + TRB, data = df)
+    
+    par(mfrow = c(2,2))
+    plot(model, 
+         main = "Regression Diagnostic Plots",
+         pch = 16,
+         col = "blue")
+  })
+
+  output$modelTests <- renderPrint({
+    df <- data()
+    model <- lm(PTS ~ MP + FGA + `FG.` + X3PA + `X3P.` + AST + TRB, data = df)
+    
+    # Durbin-Watson test
+    dw_result <- dwtest(model)
+    
+    # Breusch-Pagan test
+    bp_result <- bptest(model)
+    
+    # Shapiro-Wilk test
+    sw_result <- shapiro.test(resid(model))
+    
+    cat("Durbin-Watson Test for Independence:\n")
+    print(dw_result)
+    cat("\nBreusch-Pagan Test for Homoscedasticity:\n")
+    print(bp_result)
+    cat("\nShapiro-Wilk Test for Normality:\n")
+    print(sw_result)
+  })
+
+  output$vifOutput <- renderPrint({
+    df <- data()
+    model <- lm(PTS ~ MP + FGA + `FG.` + X3PA + `X3P.` + AST + TRB, data = df)
+    vif_values <- vif(model)
+    print(vif_values)
+  })
+
+  output$normalityPlots <- renderPlot({
+    df <- data()
+    model <- lm(PTS ~ MP + FGA + `FG.` + X3PA + `X3P.` + AST + TRB, data = df)
+    residuals_df <- data.frame(residuals = residuals(model))
+    
+    # Create histogram with normal curve
+    hist_plot <- ggplot(residuals_df, aes(x = residuals)) +
+      geom_histogram(aes(y = ..density..), 
+                     bins = 30,
+                     fill = "lightblue",
+                     color = "black") +
+      stat_function(fun = dnorm, 
+                    args = list(mean = mean(residuals_df$residuals), 
+                               sd = sd(residuals_df$residuals)),
+                    color = "red",
+                    size = 1) +
+      labs(title = "Histogram of Residuals with Normal Curve",
+           x = "Residuals",
+           y = "Density") +
+      theme_minimal()
+    
+    # Create Q-Q plot
+    qq_plot <- ggplot(residuals_df, aes(sample = residuals)) +
+      stat_qq() +
+      stat_qq_line(color = "red") +
+      labs(title = "Q-Q Plot of Residuals",
+           x = "Theoretical Quantiles",
+           y = "Sample Quantiles") +
+      theme_minimal()
+    
+    # Display both plots
+    gridExtra::grid.arrange(hist_plot, qq_plot, ncol = 2)
+  })
+
+  # New PDF viewer functionality
+  output$pdfViewer <- renderUI({
+    tags$iframe(
+      style = "height:800px; width:100%; scrolling=yes",
+      src = input$pdfSelect
+    )
+  })
+
+
 }
 
 shinyApp(ui = ui, server = server)
